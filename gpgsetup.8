@@ -1,0 +1,376 @@
+.TH GPGSETUP 8 "07 August 2019"
+.\"============================
+.SH NAME
+.\"============================
+.
+gpgsetup \- open encrypted volumes with GnuPG
+.
+.\"============================
+.SH SYNOPSIS
+.\"============================
+.SY gpgsetup
+.OP \-aAgGvf
+.OP \-r name
+.OP \-h dir
+.OP \-c file
+.OP \-m dir
+.OP \-\-tmp tmpdir
+.OP \-t template
+.OP \-u param
+.OP \-d dev
+.OP \-\-cipher cipher
+.OP \-\-offset offset
+.OP \-\-skip skip
+.OP \-\-postadd command
+.OP \-\-prerm command
+.RI [ operation ...]
+.YS
+.
+.PP
+.BR gpgsetup " [...] [" list ]
+.
+.br
+.BR gpgsetup " [...] " open
+.I name
+.
+.br
+.BR gpgsetup " [...] " close
+.I name
+.
+.br
+.BR gpgsetup " [...] [" \-s
+.IR size ]
+.BI generate " name"
+.
+.\".br
+.\".BR gpgsetup " [...] " insert
+.\".I name
+.
+.br
+.BR gpgsetup " [...] " update
+.I name
+.
+.br
+.BR gpgsetup " [...] [" \-\-show\-key | \-\-show\-raw "] " show
+.I name
+.
+.br
+.BR gpgsetup " [...] [" \-\-show-blob "] " config
+.
+.\"============================
+.SH DESCRIPTION
+.\"============================
+.B gpgsetup
+is used to mount encrypted partitions using key material which have been encrypted using
+.BR gpg (1).
+.
+.PP
+See
+.BR cryptsetup (8)
+for a discussion on encrypted partitions in general, and
+.BR gpg (1)
+for discussion on keys and using devices such as hardware security modules.
+.
+.
+.SS Operations
+The above operations are explained in the following.
+.
+.TP
+.B list
+List available blobs to unlock.
+.
+.TP
+.BI "open " name
+Unlock the device represented by the key under the name
+.IR name .
+.
+.TP
+.BI "close " name
+Remove the mapping for the device represented by the name
+.IR name .
+.
+.TP
+.BI "generate " name
+Generate a blob called
+.IR name .
+.
+.TP
+.BI "update " name
+Update the blob
+.I name
+with the given parameters.
+.
+.TP
+.BI "show " name
+Show the blob
+.IR name .
+.
+.IP
+If
+.B \-\-show\-key
+is supplied, then the KEY parameter is displayed. Otherwise, the KEY parameter
+is hidden.
+.
+.TP
+.B config
+Show the currently active configuration parameters.
+.
+.IP
+If
+.B \-\-show\-blob
+is supplied, then the default blob configuration parameters are shown instead.
+.
+.SS Blob format
+.B gpgsetup
+stores the necessary key material in a dedicated directory.
+The material is stored as an environment-style file which is encrypted and
+stored in the dedicated directory in a file ending in \(oq.gpg\(cq.
+Below is an example of such material before encryption
+.PP
+.RS
+.EX
+DEV=/dev/disk/by-uuid/a74c5499-e74a-461f-bbf1-ddf95532309d
+KEY=00112233445566778899aabbccddeeff
+PRERM=/sbin/vgchange \-an encrypt\-vg
+POSTADD=/sbin/vgchange \-ay encrypt\-vg
+.EE
+.RE
+.
+.PP
+Here's another example:
+.PP
+.RS
+.EX
+DEV=/dev/disk/by-partuuid/3aa45469-ae38-4d8b-b0d0-c6203f8a566b
+KEY=00112233445566778899aabbccddeeff
+CIPHER=aes-xts-plain64
+.EE
+.RE
+.
+.PP
+The following parameters are supported:
+.
+.TP
+.RB "DEV (" required )
+The device node which will be used for dm-crypt.
+It is advised to use a symbolic link under \(aq/dev/disk/by-*\(aq
+to ensure the named device is consistent.
+.
+.TP
+.RB "KEY (" required )
+The key material stored as a lowercase hex string.
+The length of this is dependent on the setup, cipher and mode.
+.
+.TP
+POSTADD
+A command to run after the device has been unlocked.
+.
+.TP
+PRERM
+A command to run before the device is removed.
+.
+.TP
+.RB "CIPHER (" required )
+.TQ
+OFFSET
+.TQ
+SKIP
+See
+.BR cryptsetup (8).
+Both OFFSET and SKIP default to zero.
+.
+.\"============================
+.SH OPTIONS
+.\"============================
+.
+.TP
+.BR \-r , " \-\-recipient "\c
+.I name
+encrypt for
+.IR name .
+defaults to
+.B \-\-default\-recipient\-self
+in
+.BR gpg (1).
+.
+.TP
+.BR \-h , " \-\-homedir "\c
+.I dir
+.RI "use " dir " as the homedir for
+.BR gpg (1).
+.
+.TP
+.BR \-c , " \-\-config "\c
+.I file
+.RI "use " file " as the configuration file for
+.B gpgsetup
+instead of the default value of \(oq/etc/gpgsetup.conf\(cq.
+.
+.TP
+.BR \-m , " \-\-material\-dir "\c
+.I dir
+.RI "use " dir " as the directory containing the key material files."
+.
+.TP
+.BI \-\-tmp " tmpdir"
+.RI "use " tmpdir " as the temporary directory.
+Defaults to \(oq/tmp\(cq.
+.
+.TP
+.BR \-t , " \-\-template "\c
+.I template
+.RI "use " template " as a template for the generated blob file."
+.
+.TP
+.BR \-a , " \-\-armour" , " \-\-armor"
+use armour on blob (default).
+.
+.TP
+.BR \-A , " \-\-no\-armour" , " \-\-no\-armor"
+do not use armour on blob.
+.
+.\".TP
+.\".BR \-k , " \-\-add\-key"
+.\"add key to the luks header (default).
+.\".
+.\".TP
+.\".BR \-K , " \-\-no\-add\-key"
+.\"do not add key to luks header.
+.
+.TP
+.BR \-s , " \-\-size "\c
+.I size
+the size of the key to be generated in bytes.
+Applies only to the
+.B generate
+mode of operation.
+.
+.TP
+.BR \-u , " \-\-unset "\c
+.I param
+unset/unspecify the given parameters.
+Valid values include
+.BR device ,\: cipher ,\: postadd ,\: prerm ,\: offset ,\: skip .
+Used mainly in conjunction with the
+.B update
+mode of operation.
+.
+.TP
+.BR \-d , " \-\-device "\c
+.I dev
+the device which is encrypted.
+.
+.TP
+.BI \-\-cipher " cipher"
+the cipher specification string.
+See
+.BR cryptsetup (8)
+for details.
+.
+.TP
+.BI \-\-offset " offset"
+the offset in 512 byte sectors to start the mapping at.
+.
+.TP
+.BI \-\-skip " skip"
+the offset in t512 byte sectors to start in IV calculation.
+See
+.BR cryptsetup (8)
+for details.
+.
+.TP
+.BI \-\-postadd " command"
+if present,
+.I command
+will be executed after setting up the mapping.
+.
+.TP
+.BI \-\-prerm " command"
+if present,
+.I command
+will be executed before removing the mapping.
+.
+.TP
+.BR \-g , " \-\-gpg\-stderr"
+show stderr of
+.BR gpg (1)
+(default).
+.
+.TP
+.BR \-G , " \-\-no\-gpg\-stderr"
+do not show stderr of
+.BR gpg (1).
+.
+.TP
+.BR \-v , " \-\-verbose"
+print additional messages.
+.
+.TP
+.BR \-f , " \-\-force"
+force creation of file if already exists.
+.
+.TP
+.B \-\-show\-key
+show the key when running
+.BR show .
+this has no additional effect when using
+.BR \-\-show\-raw .
+.
+.TP
+.B \-\-show\-raw
+do not parse the blob file, simply print it when running
+.BR show .
+this shows all, including unknown
+options, but also includes the key.
+.
+.\"============================
+.SH BUGS
+.\"============================
+.
+Currently known bugs include:
+.
+.IP \(bu 3
+If
+.BR scdaemon (1)
+already has ownership of a HSM as a non privileged user, then running
+.B gpgsetup
+as root will fail.
+This can be mitigated by killing the offending
+.BR scdaemon (1)
+process.
+.
+.IP \(bu 3
+.B gpgsetup
+does not currently have a clean way of accessing the
+.B \-\-prerm
+configuration parameter without creating a temporary,
+which ideally wouldn't be necessary.
+.RS
+.IP \(em 3
+This could be solved by having the blob file contain two
+sections\(ema plaintext section followed by the encrypted section.
+This would require a rewrite of the gpgexec code.
+.RE
+.
+.IP \(bu 3
+.B gpgsetup
+does not currently support LUKS and is unlikely to initially.
+A utility for creating a
+.B gpgsetup
+blob from an existing LUKS header will be created.
+.
+.
+.SS Reporting bugs
+If you find a bug, please report it to
+.MT torin@tcarey.uk
+.ME
+or preferably, open an issue at
+.UR https://www.github.com/torin-carey/gpgsetup
+.UE .
+.
+.\"============================
+.SH SEE ALSO
+.\"============================
+.
+.BR gpg (1),
+.BR cryptsetup (8)

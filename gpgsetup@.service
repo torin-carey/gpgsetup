@@ -1,0 +1,11 @@
+[Unit]
+Description=GPGSetup for %I
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/gpgsetup open %i
+ExecStop=/usr/local/sbin/gpgsetup close %i
+
+[Install]
+WantedBy=multi-user.target
