@@ -309,14 +309,16 @@ int handle_mode_show(struct gpgsetup_config *conf, struct gpgsetup_param *param)
 		return -1;
 	}
 	struct gpgsetup_blob blob = GPGSETUP_BLOB_INITIALISER;
-	int blobfile = open_material_blob(conf->materialdir, param->name);
-	if (blobfile == -1)
+	char path[PATH_MAX];
+	snprintf(path, PATH_MAX, "%s/%s.gpg", conf->materialdir, param->name);
+	int fd = open(path, O_RDONLY);
+	if (fd == -1)
 		return -1;
-	if (decrypt_blob(blobfile, conf, &blob)) {
-		close(blobfile);
+	if (decrypt_blob(fd, conf, &blob)) {
+		close(fd);
 		return -1;
 	}
-	close(blobfile);
+	close(fd);
 	print_blob(&blob, stdout, conf->flags & CONFIG_SHOWKEY);
 	return 0;
 }
