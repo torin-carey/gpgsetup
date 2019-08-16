@@ -286,6 +286,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "failed to read configuration file\n");
 		return -1;
 	}
+	fclose(conf);
 
 post_config_load:
 
