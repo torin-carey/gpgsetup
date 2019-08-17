@@ -34,7 +34,7 @@ gpgsetup \- open encrypted volumes with GnuPG
 .I name
 .
 .br
-.BR gpgsetup " [...] " close
+.BR gpgsetup " [...] [" \-\-defer "] " close
 .I name
 .
 .br
@@ -308,6 +308,10 @@ print additional messages.
 .TP
 .BR \-f , " \-\-force"
 force creation of file if already exists.
+.
+.TP
+.BR \-\-defer
+defer closing of device.
 .
 .TP
 .B \-\-show\-key

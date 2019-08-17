@@ -24,6 +24,7 @@ typedef int (*config_entry)(const char *name, const char *value, void *ptr);
 // since we want it to be an option that needs explicitly stated
 #define CONFIG_SHOWRAW (1<<10)
 #define CONFIG_FORCE (1<<11)
+#define CONFIG_DEFER (1<<12)
 
 struct gpgsetup_config {
 	char *recipient, *homedir, *materialdir, *tmp, *templ;

@@ -34,6 +34,9 @@ endif
 ifdef prerm
 	CFLAGS += -DBLOB_PRERM_DEFAULT=\"$(recipient)\"
 endif
+ifeq ($(libcryptsetup),1)
+	CFLAGS += -DLIBCRYPTSETUP -lcryptsetup
+endif
 
 .PHONY: all clean install
 

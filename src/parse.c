@@ -148,6 +148,13 @@ int config_callback(const char *name, const char *value, void *ptr)
 		}
 		conf->specified |= CONFIG_FORCE;
 		return 0;
+	} else if (!strcmp(name, "DEFER")) {
+		if (parse_bool(value, &conf->flags, CONFIG_DEFER)) {
+			fprintf(stderr, "failed to parse \"%s\", invalid bool\n",
+				name);
+		}
+		conf->specified |= CONFIG_DEFER;
+		return 0;
 	}
 	// TODO Do we really need this?
 	if (wptr) {
@@ -280,6 +287,9 @@ void print_config(const struct gpgsetup_config *conf, FILE *stream)
 			conf->flags & CONFIG_FORCE ? "yes" : "no");
 	if (conf->specified & CONFIG_TMP)
 		fprintf(stream, "TMP=%s\n", conf->tmp ? conf->tmp : "");
+	if (conf->specified & CONFIG_DEFER)
+		fprintf(stream, "DEFER=%s\n",
+			conf->flags & CONFIG_DEFER ? "yes" : "no");
 	funlockfile(stream);
 }
 

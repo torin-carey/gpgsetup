@@ -86,6 +86,7 @@ void print_usage(void)
 #define LONG_SHOWRAW 6
 #define LONG_TMP 7
 #define LONG_SHOWBLOB 8
+#define LONG_DEFER 9
 
 const struct option optlong[] = {
 	{"cipher", required_argument, NULL, 0},
@@ -97,6 +98,7 @@ const struct option optlong[] = {
 	{"show-raw", no_argument, NULL, 0},
 	{"tmp", required_argument, NULL, 0},
 	{"show-blob", no_argument, NULL, 0},
+	{"defer", no_argument, NULL, 0},
 
 	{"recipient", required_argument, NULL, 'r'},
 	{"homedir", required_argument, NULL, 'h'},
@@ -166,6 +168,10 @@ int main(int argc, char **argv)
 				break;
 			case LONG_SHOWBLOB:
 				flags |= FLAG_SHOWBLOB;
+				break;
+			case LONG_DEFER:
+				gpgsetup_opt.flags |= CONFIG_DEFER;
+				gpgsetup_opt.specified |= CONFIG_DEFER;
 				break;
 			}
 			break;
