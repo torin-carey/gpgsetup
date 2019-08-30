@@ -5,7 +5,7 @@ Description=GPGSetup for %I
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/local/sbin/gpgsetup open %i
-ExecStop=/usr/local/sbin/gpgsetup close %i
+ExecStop=/usr/local/sbin/gpgsetup --defer close %i
 
 [Install]
 WantedBy=multi-user.target
