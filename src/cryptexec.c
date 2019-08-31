@@ -8,6 +8,8 @@
 #include "parse.h"
 #include "util.h"
 
+#define __unused __attribute__((unused))
+
 #ifdef LIBCRYPTSETUP
 
 #include <libcryptsetup.h>
@@ -130,7 +132,17 @@ int close_cryptdev(const struct gpgsetup_config *conf, char *name)
 	return r;
 }
 
+int extract_from_luks(const struct gpgsetup_config *conf __unused,
+			struct gpgsetup_blob *blob __unused, char *device __unused)
+{
+	fputs(__FILE__ ":" __func__ " unimplemented function\n", stderr);
+	return -1;
+}
+
 #else // LIBCRYPTSETUP
+
+#include <string.h>
+#include <limits.h>
 
 #ifndef CRYPTSETUP_BIN
 #define CRYPTSETUP_BIN "/sbin/cryptsetup"
@@ -258,6 +270,149 @@ int close_cryptdev(const struct gpgsetup_config *conf, char *name)
 		return -1;
 	}
 	return 0;
+}
+
+int extract_from_luks(const struct gpgsetup_config *conf __unused,
+			struct gpgsetup_blob *to_blob __unused, char *device)
+{
+	int r = -1, pipes[2];
+	if (pipe(pipes)) {
+		perror("pipe");
+		return -1;
+	}
+
+	char tmpdir[PATH_MAX-3];
+	snprintf(tmpdir, PATH_MAX-3, "%s/.XXXXXX", conf->tmp);
+	if (!mkdtemp(tmpdir)) {
+		perror("mkdtemp");
+		return -1;
+	}
+	char mkfile[PATH_MAX];
+	snprintf(mkfile, PATH_MAX, "%s/mk", tmpdir);
+
+	char *argv[] = {CRYPTSETUP_BIN, "luksDump", device, "--dump-master-key",
+			"--master-key-file", mkfile, "--batch-mode", NULL};
+
+	pid_t chld = fork();
+	if (!chld) {
+		close(pipes[0]);
+		dup2(pipes[1], STDOUT_FILENO);
+		close(pipes[1]);
+		execv(argv[0], argv);
+		exit(255);
+	} else if (chld == -1) {
+		perror("fork");
+		return -1;
+	}
+	close(pipes[1]);
+
+	int wstatus;
+	// TODO: Fix ugly code
+	if (waitpid(chld, &wstatus, 0) == (pid_t)-1) {
+		perror("waitpid");
+		kill(chld, SIGTERM);
+		if (rmdir(tmpdir)) {
+			perror("rmdir");
+		}
+		return -1;
+	}
+	if (!WIFEXITED(wstatus)) {
+		fputs("cryptsetup exited due to a signal\n", stderr);
+		if (rmdir(tmpdir))
+			perror("rmdir");
+		return -1;
+	}
+	int status = WEXITSTATUS(wstatus);
+	if (status) {
+		fprintf(stderr, "cryptsetup exited with status %d\n", status);
+		if (rmdir(tmpdir))
+			perror("rmdir");
+		return -1;
+	}
+
+	FILE *fp = fdopen(pipes[0], "r");
+	if (!fp) {
+		perror("fdopen");
+		goto finish;
+	}
+
+	struct gpgsetup_blob blob = GPGSETUP_BLOB_INITIALISER;
+	blob.cipher = malloc(64);
+	if (!blob.cipher) {
+		perror("malloc");
+		goto finish;
+	}
+	blob.alloc |= BLOB_CIPHER;
+
+	char linebuf[128], valuebuf[64], tmp[64];
+	while (fgets(linebuf, sizeof(linebuf), fp)) {
+		char *second;
+		second = strchr(linebuf, ':');
+		if (!second)
+			continue;
+		*second++ = '\0';
+		sscanf(second, "%s", valuebuf);
+		//printf("[%s] = [%s]\n", linebuf, valuebuf);
+		if (!strcmp(linebuf, "Cipher name")) {
+			sscanf(second, "%63s", blob.cipher);
+		} else if (!strcmp(linebuf, "Cipher mode")) {
+			tmp[0] = '-';
+			sscanf(second, "%62s", tmp + 1);
+			strncat(blob.cipher, tmp, 64);
+			blob.specified |= BLOB_CIPHER;
+		} else if (!strcmp(linebuf, "Payload offset")) {
+			sscanf(second, "%lu", &blob.offset);
+			blob.specified |= BLOB_OFFSET;
+		} else if (!strcmp(linebuf, "MK bits")) {
+			sscanf(second, "%lu", &blob.key_len);
+			if (blob.key_len & ((1<<3) - 1)) {
+				fprintf(stderr, "bad key length %lu: should be multiple of 8",
+					blob.key_len);
+				goto free_blob;
+			}
+			blob.key_len >>= 3;
+		}
+	}
+	fclose(fp);
+	if (!blob.key_len) {
+		fputs("missing MK length\n", stderr);
+		goto free_blob;
+	}
+
+	blob.key = malloc(blob.key_len);
+	if (!blob.key) {
+		perror("malloc");
+		goto free_blob;
+	}
+	blob.alloc |= BLOB_KEY;
+
+	fp = fopen(mkfile, "r");
+	if (!fp) {
+		fprintf(stderr, "failed to open MK: %m\n");
+		goto free_blob;
+	}
+	if (!fread(blob.key, blob.key_len, 1, fp)) {
+		if (feof(fp))
+			fprintf(stderr, "failed to read MK: %m\n");
+		else
+			fputs("failed to read MK: length mismatch\n", stderr);
+		goto free_blob;
+	}
+	fclose(fp);
+	blob.specified |= BLOB_KEY;
+
+	apply_blob_left(to_blob, &blob);
+	r = 0;
+
+free_blob:
+	free_blob(&blob);
+finish:
+	if (unlink(mkfile))
+		perror("unlink");
+	if (rmdir(tmpdir))
+		perror("rmdir");
+
+	return r;
 }
 
 #endif // LIBCRYPTSETUP

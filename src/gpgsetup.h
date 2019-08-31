@@ -14,10 +14,11 @@ enum gpgsetup_mode {
 	UPDATE,
 	SHOW,
 	CONFIG,
+	CREATE,
 };
 
 struct gpgsetup_param {
-	char *name;
+	char *name, *dev;
 	struct gpgsetup_blob *blob;
 };
 
@@ -27,5 +28,6 @@ int handle_mode_close(struct gpgsetup_config *, struct gpgsetup_param *);
 int handle_mode_generate(struct gpgsetup_config *, struct gpgsetup_param *);
 int handle_mode_update(struct gpgsetup_config *, struct gpgsetup_param *);
 int handle_mode_show(struct gpgsetup_config *, struct gpgsetup_param *);
+int handle_mode_create(struct gpgsetup_config *, struct gpgsetup_param *);
 
 #endif // H_GPGSETUP

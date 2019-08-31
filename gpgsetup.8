@@ -57,6 +57,10 @@ gpgsetup \- open encrypted volumes with GnuPG
 .br
 .BR gpgsetup " [...] [" \-\-show-blob "] " config
 .
+.br
+.BR gpgsetup " [...] " create
+.IR name " " dev
+.
 .\"============================
 .SH DESCRIPTION
 .\"============================
@@ -119,6 +123,21 @@ Show the currently active configuration parameters.
 If
 .B \-\-show\-blob
 is supplied, then the default blob configuration parameters are shown instead.
+.
+.TP
+.BI "create " name " " dev
+Create a blob from an existing LUKS volume.
+.
+.I name
+is the name of the blob to create and
+.I dev
+is a path to the LUKS volume.
+.
+If the LUKS volume has a header on a different device/file, then
+.I dev
+should be the path of where the header is.
+In this case, the actual device path can be set with
+.BR \-\-device .
 .
 .SS Blob format
 .B gpgsetup
@@ -357,11 +376,11 @@ This would require a rewrite of the gpgexec code.
 .RE
 .
 .IP \(bu 3
-.B gpgsetup
-does not currently support LUKS and is unlikely to initially.
-A utility for creating a
-.B gpgsetup
-blob from an existing LUKS header will be created.
+The
+.B libcryptsetup
+featured version currently does not support the
+.B create
+operation, this is likely to change soon.
 .
 .
 .SS Reporting bugs

@@ -16,6 +16,7 @@
 #include "util.h"
 
 void main_log(int level, const char *msg);
+static int write_blob(struct gpgsetup_config *conf, struct gpgsetup_param *param);
 
 int handle_mode_list(struct gpgsetup_config *conf, struct gpgsetup_param *param)
 {
@@ -210,6 +211,11 @@ int handle_mode_generate(struct gpgsetup_config *conf, struct gpgsetup_param *pa
 		fprintf(stderr, "failed to generate key: %m\n");
 		return -1;
 	}
+	return write_blob(conf, param);
+}
+
+static int write_blob(struct gpgsetup_config *conf, struct gpgsetup_param *param)
+{
 	char path[PATH_MAX];
 	snprintf(path, PATH_MAX, "%s/%s.gpg", conf->materialdir, param->name);
 	int blobfd = open(path, O_WRONLY | O_CREAT |
@@ -231,7 +237,7 @@ int handle_mode_generate(struct gpgsetup_config *conf, struct gpgsetup_param *pa
 		}
 		return -1;
 	}
-	if (encrypt_blob(blobfd, conf, blob)) {
+	if (encrypt_blob(blobfd, conf, param->blob)) {
 		close(blobfd);
 	}
 	return 0;
@@ -321,4 +327,14 @@ int handle_mode_show(struct gpgsetup_config *conf, struct gpgsetup_param *param)
 	close(fd);
 	print_blob(&blob, stdout, conf->flags & CONFIG_SHOWKEY);
 	return 0;
+}
+
+int handle_mode_create(struct gpgsetup_config *conf, struct gpgsetup_param *param)
+{
+	//struct gpgsetup_blob blob = GPGSETUP_BLOB_INITIALISER;
+	int r = extract_from_luks(conf, param->blob, param->dev);
+	if (r)
+		return r;
+	print_blob(param->blob, stdout, 1);
+	return write_blob(conf, param);
 }

@@ -234,7 +234,7 @@ int main(int argc, char **argv)
 	}
 
 	enum gpgsetup_mode mode = LIST;
-	struct gpgsetup_param param = {NULL, &blob_opt};
+	struct gpgsetup_param param = {NULL, NULL, &blob_opt};
 
 	if (argc > optind) {
 		if (!strcmp(argv[optind], "list")) {
@@ -274,6 +274,12 @@ int main(int argc, char **argv)
 			}
 		} else if (!strcmp(argv[optind], "config")) {
 			mode = CONFIG;
+		} else if (!strcmp(argv[optind], "create")) {
+			mode = CREATE;
+			if (argc - optind != 3) {
+				fputs("create requires a name and device\n", stderr);
+				print_usage();
+			}
 		} else {
 			print_usage();
 		}
@@ -340,6 +346,14 @@ post_config_load:
 		}
 		r = 0;
 		break;
+	case CREATE:
+		param.name = argv[optind++];
+		param.dev = argv[optind++];
+		if (!(blob_opt.specified & BLOB_DEV)) {
+			blob_opt.dev = param.dev;
+			blob_opt.specified |= BLOB_DEV;
+		}
+		r = handle_mode_create(&gpgsetup_conf, &param);
 	}
 
 	return r;
