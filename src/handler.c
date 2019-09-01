@@ -335,6 +335,5 @@ int handle_mode_create(struct gpgsetup_config *conf, struct gpgsetup_param *para
 	int r = extract_from_luks(conf, param->blob, param->dev);
 	if (r)
 		return r;
-	print_blob(param->blob, stdout, 1);
 	return write_blob(conf, param);
 }
