@@ -1,0 +1,40 @@
+.TH GPGSETUP.CONF 5
+.
+.SH NAME
+gpgsetup.conf \- gpgsetup configuration file
+.
+.SH SYNOPSIS
+.B /etc/gpgsetup.conf
+.
+.SH DESCRIPTION
+.I /etc/gpgsetup.conf
+is used by
+.BR gpgsetup (1)
+to setup dm-crypt mappings using
+.BR gpg (1)
+encrypted keys.
+.SS Configuration format
+.I /etc/gpgsetup.conf
+uses simple name-value assignments
+.P
+.TP
+.BR gpghome " = "\c
+.I dir
+Directory which should be used by
+.BR gpg (1)
+as it's home directory.
+.
+.TP
+.BR armour " = "\c
+.I boolean
+.TQ
+.BR armor " = "\c
+.I boolean
+Whether the encrypted blobs should be armoured by
+.BR gpg (1).
+.
+.SH FILES
+.I /etc/gpgsetup.conf
+.
+.SH SEE ALSO
+.BR gpgsetup "(1), " cryptsetup "(8), " gpg (1)
